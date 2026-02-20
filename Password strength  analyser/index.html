@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Password Strength Analyser</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at top, #1f2933, #020617);
+      color: #e5e7eb;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: rgba(15, 23, 42, 0.98);
+      border-radius: 16px;
+      padding: 24px 24px 20px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(148, 163, 184, 0.35);
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #9ca3af;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .input-row {
+      position: relative;
+      margin-bottom: 16px;
+    }
+
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 40px 10px 12px;
+      border-radius: 8px;
+      border: 1px solid #4b5563;
+      background: #020617;
+      color: #e5e7eb;
+      outline: none;
+      font-size: 0.95rem;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input[type="password"]:focus,
+    input[type="text"]:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.6);
+    }
+
+    .toggle-visibility {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 0.75rem;
+      color: #9ca3af;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .meter-wrapper {
+      margin-bottom: 6px;
+    }
+
+    .meter-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: #020617;
+      overflow: hidden;
+      border: 1px solid #4b5563;
+    }
+
+    .meter-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: inherit;
+      transition: width 0.2s ease, background 0.2s ease;
+    }
+
+    .strength-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+
+    .strength-label {
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .strength-label.weak {
+      color: #f97373;
+    }
+
+    .strength-label.fair {
+      color: #facc15;
+    }
+
+    .strength-label.good {
+      color: #22c55e;
+    }
+
+    .strength-label.strong {
+      color: #22c55e;
+    }
+
+    .criteria-list {
+      list-style: none;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 4px 12px;
+      margin-bottom: 4px;
+    }
+
+    .criteria-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .bullet {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      border: 1px solid #6b7280;
+      background: transparent;
+    }
+
+    .bullet.met {
+      background: #22c55e;
+      border-color: #22c55e;
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+
+    .hint span {
+      color: #e5e7eb;
+    }
+
+    @media (max-width: 480px) {
+      .card {
+        margin: 16px;
+        padding: 20px 18px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1 class="title">Password strength analyser</h1>
+    <p class="subtitle">Type a password to see how strong it is and how to improve it.</p>
+
+    <label for="password-input">Password</label>
+    <div class="input-row">
+      <input id="password-input" type="password" autocomplete="off" placeholder="Enter password">
+      <span id="toggle-visibility" class="toggle-visibility">SHOW</span>
+    </div>
+
+    <div class="meter-wrapper">
+      <div class="meter-track">
+        <div id="meter-fill" class="meter-fill"></div>
+      </div>
+    </div>
+
+    <div class="strength-label-row">
+      <span id="strength-label" class="strength-label weak">Too weak</span>
+      <span id="strength-score-text">0 / 5 checks</span>
+    </div>
+
+    <ul class="criteria-list">
+      <li class="criteria-item">
+        <span id="crit-length" class="bullet"></span>
+        <span>At least 12 characters</span>
+      </li>
+      <li class="criteria-item">
+        <span id="crit-lower" class="bullet"></span>
+        <span>Lowercase letter</span>
+      </li>
+      <li class="criteria-item">
+        <span id="crit-upper" class="bullet"></span>
+        <span>Uppercase letter</span>
+      </li>
+      <li class="criteria-item">
+        <span id="crit-number" class="bullet"></span>
+        <span>Number</span>
+      </li>
+      <li class="criteria-item">
+        <span id="crit-symbol" class="bullet"></span>
+        <span>Special character</span>
+      </li>
+    </ul>
+
+    <p class="hint">
+      Feedback: <span id="feedback-text">Start typing to analyse your password.</span>
+    </p>
+  </main>
+
+  <script>
+    const passwordInput = document.getElementById("password-input");
+    const toggleVisibility = document.getElementById("toggle-visibility");
+    const meterFill = document.getElementById("meter-fill");
+    const strengthLabel = document.getElementById("strength-label");
+    const strengthScoreText = document.getElementById("strength-score-text");
+    const feedbackText = document.getElementById("feedback-text");
+
+    const critLength = document.getElementById("crit-length");
+    const critLower = document.getElementById("crit-lower");
+    const critUpper = document.getElementById("crit-upper");
+    const critNumber = document.getElementById("crit-number");
+    const critSymbol = document.getElementById("crit-symbol");
+
+    function analysePassword(value) {
+      const checks = {
+        length: value.length >= 12,
+        lower: /[a-z]/.test(value),
+        upper: /[A-Z]/.test(value),
+        number: /[0-9]/.test(value),
+        symbol: /[^A-Za-z0-9]/.test(value)
+      };
+
+      const score = Object.values(checks).filter(Boolean).length;
+      updateCriteriaUI(checks);
+      updateStrengthUI(score, checks, value);
+    }
+
+    function updateCriteriaUI(checks) {
+      critLength.classList.toggle("met", checks.length);
+      critLower.classList.toggle("met", checks.lower);
+      critUpper.classList.toggle("met", checks.upper);
+      critNumber.classList.toggle("met", checks.number);
+      critSymbol.classList.toggle("met", checks.symbol);
+    }
+
+    function updateStrengthUI(score, checks, value) {
+      const percentage = (score / 5) * 100;
+      meterFill.style.width = percentage + "%";
+
+      let labelText = "";
+      let labelClass = "weak";
+      let color = "#f97373";
+      let feedback = "";
+
+      if (!value) {
+        meterFill.style.width = "0%";
+        strengthScoreText.textContent = "0 / 5 checks";
+        strengthLabel.textContent = "Too weak";
+        strengthLabel.className = "strength-label weak";
+        feedbackText.textContent = "Start typing to analyse your password.";
+        return;
+      }
+
+      if (score <= 1) {
+        labelText = "Too weak";
+        labelClass = "weak";
+        color = "#f97373";
+        feedback = "Add more length and mix of characters.";
+      } else if (score === 2) {
+        labelText = "Weak";
+        labelClass = "weak";
+        color = "#fb923c";
+        feedback = "Add uppercase, numbers and symbols to strengthen it.";
+      } else if (score === 3) {
+        labelText = "Fair";
+        labelClass = "fair";
+        color = "#facc15";
+        feedback = "Almost there. Add more variety or length.";
+      } else if (score === 4) {
+        labelText = "Good";
+        labelClass = "good";
+        color = "#4ade80";
+        feedback = "Good password. A bit more length makes it stronger.";
+      } else {
+        labelText = "Strong";
+        labelClass = "strong";
+        color = "#22c55e";
+        feedback = "Strong password. Keep it unique for each account.";
+      }
+
+      meterFill.style.background = color;
+      strengthLabel.textContent = labelText;
+      strengthLabel.className = "strength-label " + labelClass;
+      strengthScoreText.textContent = score + " / 5 checks";
+      feedbackText.textContent = feedback;
+    }
+
+    passwordInput.addEventListener("input", function () {
+      analysePassword(passwordInput.value);
+    });
+
+    toggleVisibility.addEventListener("click", function () {
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleVisibility.textContent = isPassword ? "HIDE" : "SHOW";
+      passwordInput.focus();
+    });
+  </script>
+</body>
+</html>
